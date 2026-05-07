@@ -127,7 +127,7 @@ def detect_world_coords():
             (np.array([0, 90, 60]), np.array([12, 255, 255])),
             (np.array([168, 90, 60]), np.array([179, 255, 255])),
         ],
-        "green": [(np.array([35, 50, 20]), np.array([90, 255, 255]))],
+        "green": [(np.array([30, 35, 15]), np.array([95, 255, 255]))],
         "blue": [(np.array([95, 80, 40]), np.array([135, 255, 255]))],
     }
 
@@ -149,7 +149,7 @@ def detect_world_coords():
         candidates = []
         for c in contours:
             area = cv2.contourArea(c)
-            if area < 50 or area > 2500:
+            if area < 30 or area > 3000:
                 continue
 
             x, y, w, h = cv2.boundingRect(c)
@@ -157,9 +157,9 @@ def detect_world_coords():
                 continue
             aspect = w / float(h)
             fill = area / float(w * h)
-            if not (0.6 <= aspect <= 1.6):
+            if not (0.5 <= aspect <= 1.8):
                 continue
-            if fill < 0.55:
+            if fill < 0.45:
                 continue
 
             M = cv2.moments(c)
