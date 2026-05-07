@@ -123,12 +123,13 @@ def detect_world_coords():
 
     # Shadow-tolerant thresholds
     ranges = {
-        "red": [
-            (np.array([0, 90, 60]), np.array([12, 255, 255])),
-            (np.array([168, 90, 60]), np.array([179, 255, 255])),],
-        "green": [(np.array([30, 35, 15]), np.array([95, 255, 255]))],
-        "blue": [(np.array([95, 80, 40]), np.array([135, 255, 255]))],
-    }
+    "red": [
+        (np.array([0, 90, 60]), np.array([12, 255, 255])),
+        (np.array([168, 90, 60]), np.array([179, 255, 255])),
+    ],
+    "green": [(np.array([35, 50, 20]), np.array([90, 255, 255]))],
+    "blue": [(np.array([95, 80, 40]), np.array([135, 255, 255]))],
+}
 
     def find_cube(colour_ranges):
         mask = None
