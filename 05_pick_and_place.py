@@ -248,7 +248,7 @@ def main():
 
     # Waypoints
     pre_grasp = [target[0], target[1], 0.78]
-    grasp = [target[0], target[1], 0.63]
+    grasp = [target[0], target[1], 0.65]
     lift = [target[0], target[1], 0.82]
     pre_place = [place[0], place[1], 0.82]
     place_down = [place[0], place[1], 0.70]
