@@ -54,11 +54,18 @@ _, _, rgb, depth, seg = p.getCameraImage(
     renderer=p.ER_BULLET_HARDWARE_OPENGL,
 )
 
-rgb_array = np.array(rgb, dtype=np.uint8)
-if rgb_array.shape[-1] == 4:
-    rgb_array = rgb_array[:, :, :3]
+#OLD FUNCTION - AS BACKUP
+#rgb_array = np.array(rgb, dtype=np.uint8)
+#if rgb_array.shape[-1] == 4:
+#    rgb_array = rgb_array[:, :, :3]
 
-Image.fromarray(rgb_array).save("scene_view.png")
+#Image.fromarray(rgb_array).save("scene_view.png")
+
+rgb_array = np.asarray(rgb, dtype=np.uint8)
+rgb_array = rgb_array.reshape((CAM_HEIGHT, CAM_WIDTH, 4))  # enforce H x W x RGBA
+rgb_array = rgb_array[:, :, :3]  # RGB only
+Image.fromarray(rgb_array, mode="RGB").save("scene_view.png")
+
 print(f"Saved scene_view.png  ({CAM_WIDTH}x{CAM_HEIGHT})")
 
 np.savez(

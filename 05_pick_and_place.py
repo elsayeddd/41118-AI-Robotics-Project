@@ -8,7 +8,7 @@ from common_scene import TARGET_ZONE, build_tabletop_scene, camera_params, setup
 from PIL import Image
 import cv2
 
-GUI = False
+GUI = True
 TARGET_COLOUR = "blue"
 EE_LINK_INDEX = 11
 ARM_JOINTS = [0, 1, 2, 3, 4, 5, 6]
