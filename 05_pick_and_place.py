@@ -42,7 +42,7 @@ def step(seconds: float):
             time.sleep(1.0 / SIM_HZ)
 
 
-def set_gripper(robot_id: int, opening: float = 0.08, force: float = 120):
+def set_gripper(robot_id: int, opening: float = 0.08, force: float = 150):
     """
     Set gripper opening width (meters).
     opening is total width, each finger is half.
@@ -248,7 +248,7 @@ def main():
 
     # Waypoints
     pre_grasp = [target[0], target[1], 0.78]
-    grasp = [target[0], target[1], 0.625]
+    grasp = [target[0], target[1], 0.63]
     lift = [target[0], target[1], 0.82]
     pre_place = [place[0], place[1], 0.82]
     place_down = [place[0], place[1], 0.70]
