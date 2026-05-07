@@ -131,12 +131,13 @@ def detect_world_coords():
     "blue": [(np.array([95, 80, 40]), np.array([135, 255, 255]))],
 }
 
-    def find_cube(colour_ranges):
+    def find_cube(colour_ranges, min_area=50, max_area=2500, min_fill=0.55):
         mask = None
         for low, high in colour_ranges:
             m = cv2.inRange(img_hsv, low, high)
             mask = m if mask is None else cv2.bitwise_or(mask, m)
 
+        # Denoise
         kernel = np.ones((3, 3), np.uint8)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
@@ -145,36 +146,40 @@ def detect_world_coords():
         if not contours:
             return None
 
-        # Prefer cube-like blob (reject giant target pad / noise)
         candidates = []
         for c in contours:
             area = cv2.contourArea(c)
-            if area < 30 or area > 3000:
+            if area < min_area or area > max_area:
                 continue
 
             x, y, w, h = cv2.boundingRect(c)
-            if h == 0:
+            rect_area = float(w * h)
+            if rect_area <= 0:
                 continue
+
+            fill = area / rect_area
             aspect = w / float(h)
-            fill = area / float(w * h)
-            if not (0.5 <= aspect <= 1.8):
+
+            # Cube-like contour gating
+            if fill < min_fill:
                 continue
-            if fill < 0.45:
+            if aspect < 0.6 or aspect > 1.6:
                 continue
 
             M = cv2.moments(c)
             if M["m00"] == 0:
                 continue
-
             cx = int(M["m10"] / M["m00"])
             cy = int(M["m01"] / M["m00"])
-            score = fill - abs(aspect - 1.0) * 0.2 - area * 1e-5
+
+            # Ranking score: prefer compact, near-square, not huge
+            score = fill - abs(aspect - 1.0) * 0.2 - (area / max_area) * 0.05
             candidates.append((score, cx, cy))
 
         if not candidates:
             return None
 
-        candidates.sort(reverse=True)
+        candidates.sort(key=lambda t: t[0], reverse=True)
         _, cx, cy = candidates[0]
         return cx, cy
 
