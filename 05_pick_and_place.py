@@ -20,7 +20,7 @@ from common_scene import build_tabletop_scene, setup_world, TARGET_ZONE
 GUI = True
 
 # Choose target cube colour: "red", "green", "blue"
-TARGET_COLOUR = "green"
+TARGET_COLOUR = "blue"
 
 # Simulation/control constants
 SIM_HZ = 240
