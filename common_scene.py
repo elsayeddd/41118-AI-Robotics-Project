@@ -66,6 +66,6 @@ def camera_params(width=640, height=480, fov=60.0):
         "height": height,
         "fov": fov,
         "cam_target": TABLE_CENTER.tolist(),
-        "cam_eye": [0.5, 0, 1.6],
+        "cam_eye": [0.72, 0.0, 1.45],
         "cam_up": [1, 0, 0],
     }
