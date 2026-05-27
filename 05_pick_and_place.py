@@ -36,6 +36,7 @@ FINGER_JOINTS = (9, 10)
 ARM_JOINTS = [0, 1, 2, 3, 4, 5, 6]
 DEFAULT_YOLO_MODEL = Path("models") / "yolo_cube.pt"
 DEFAULT_RL_POLICY = Path("models") / "sorting_policy.zip"
+TARGET_ZONE_Y_MIN = 0.25
 
 
 def step(seconds: float, gui: bool):
@@ -86,7 +87,9 @@ def move_ee_to(robot_id: int, pos, orn, duration: float, gui: bool):
 
 def capture_scene(width: int, height: int, gui: bool):
     cam_cfg = camera_params(width=width, height=height, fov=60.0)
-    renderer = p.ER_BULLET_HARDWARE_OPENGL if gui else p.ER_TINY_RENDERER
+    # The synthetic YOLO dataset is rendered with ER_TINY_RENDERER, so use the
+    # same camera renderer at runtime to reduce sim-to-sim appearance shift.
+    renderer = p.ER_TINY_RENDERER
     rgb, _, _ = capture_camera(cam_cfg, renderer=renderer)
     Image.fromarray(rgb, mode="RGB").save("scene_view.png")
     save_camera_params(cam_cfg, "camera_params.npz")
@@ -122,6 +125,12 @@ def detect_cubes(model_path: Path, image_path: Path, cam_cfg, conf: float):
             }
         )
     return detections
+
+
+def source_area_detections(detections):
+    """Ignore cubes already in the target/sorting zone."""
+
+    return [det for det in detections if det["world"][1] < TARGET_ZONE_Y_MIN]
 
 
 def draw_detections(image_path: Path, detections, output_path=Path("detection_result.png")):
@@ -227,7 +236,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", type=Path, default=DEFAULT_YOLO_MODEL)
     parser.add_argument("--rl-policy", type=Path, default=DEFAULT_RL_POLICY)
-    parser.add_argument("--conf", type=float, default=0.35)
+    parser.add_argument("--conf", type=float, default=0.20)
     parser.add_argument("--seed", type=int, default=2)
     parser.add_argument("--distractors", type=int, default=7)
     parser.add_argument("--width", type=int, default=640)
@@ -240,7 +249,7 @@ def main():
     args = parse_args()
     gui = not args.direct
     setup_world(gui=gui)
-    panda_id, _, _ = build_tabletop_scene(
+    panda_id, cube_positions, _ = build_tabletop_scene(
         seed=args.seed,
         num_distractors=args.distractors,
         randomize_cube_colours=True,
@@ -248,24 +257,40 @@ def main():
     )
     step(1.0, gui)
 
-    # Park before perception so the robot handles the known self-occlusion problem.
-    park_arm(panda_id, gui)
-    cam_cfg = capture_scene(args.width, args.height, gui)
-    cam_cfg = load_camera_params("camera_params.npz")
+    expected_cubes = len(cube_positions)
+    targets = place_targets(expected_cubes)
+    moved = 0
+    missed_observations = 0
 
-    detections = detect_cubes(args.model, Path("scene_view.png"), cam_cfg, args.conf)
-    draw_detections(Path("scene_view.png"), detections)
-    print(f"Detected {len(detections)} cube candidates.")
-    if not detections:
-        p.disconnect()
-        raise RuntimeError("No cubes detected by YOLO.")
+    while moved < expected_cubes and missed_observations < 2:
+        # Park before every perception pass so the robot handles self-occlusion.
+        park_arm(panda_id, gui)
+        cam_cfg = capture_scene(args.width, args.height, gui)
+        cam_cfg = load_camera_params("camera_params.npz")
 
-    ordered = order_detections_with_rl(detections, args.rl_policy)
-    targets = place_targets(len(ordered))
-    for detection, place in zip(ordered, targets):
-        pick_and_place_one(panda_id, detection, place, gui)
+        detections = detect_cubes(args.model, Path("scene_view.png"), cam_cfg, args.conf)
+        remaining = source_area_detections(detections)
+        draw_detections(Path("scene_view.png"), remaining)
+        print(
+            f"Observation {moved + 1}: detected {len(detections)} candidates, "
+            f"{len(remaining)} still outside target zone."
+        )
 
-    print("Done. All YOLO-detected cubes were moved to the sorting zone.")
+        if not remaining:
+            missed_observations += 1
+            continue
+
+        missed_observations = 0
+        ordered = order_detections_with_rl(remaining, args.rl_policy)
+        pick_and_place_one(panda_id, ordered[0], targets[moved], gui)
+        moved += 1
+
+    if moved < expected_cubes:
+        print(f"Stopped after moving {moved}/{expected_cubes} cubes; no more source-area cubes were detected.")
+    else:
+        print(f"Moved all expected cubes: {moved}/{expected_cubes}.")
+
+    print("Done. Cube sorting sequence complete.")
     step(2.0, gui)
     p.disconnect()
 
