@@ -72,7 +72,7 @@ def parse_args():
     parser.add_argument("--camera", type=Path, default=Path("camera_params.npz"))
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--output", type=Path, default=Path("detection_result.png"))
-    parser.add_argument("--conf", type=float, default=0.35)
+    parser.add_argument("--conf", type=float, default=0.20)
     return parser.parse_args()
 
 
