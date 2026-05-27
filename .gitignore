@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+
+scene_view.png
+detection_result.png
+camera_params.npz
+
+datasets/
+runs/
+models/*.pt
+models/*.zip
