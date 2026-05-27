@@ -1,120 +1,106 @@
-"""
-04_detect_objects.py - Find the coloured cubes in the camera image.
-"""
+"""Detect cube objects in the camera image with a fine-tuned YOLO model."""
+
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
 
 import cv2
-import numpy as np
+from ultralytics import YOLO
 
-img_bgr = cv2.imread("scene_view.png")
-if img_bgr is None:
-    raise FileNotFoundError("scene_view.png not found. Run 03_camera_capture.py first.")
-
-img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-
-COLOUR_RANGES = {
-    "red":   [(np.array([0,   100, 80]),  np.array([10,  255, 255])),
-              (np.array([170, 100, 80]),  np.array([179, 255, 255]))],
-    "green": [(np.array([35, 50, 20]), np.array([90, 255, 255]))],
-    "blue":  [(np.array([100, 100, 60]),  np.array([130, 255, 255]))],
-}
+from common_scene import CUBE_Z, load_camera_params, pixel_to_world
 
 
-def find_cube(img_hsv, colour_ranges, min_area=50, max_area=2500, min_fill=0.55):
-    """
-    Returns (cx, cy, area) of best cube-like blob, or None.
-    - min_area/max_area remove tiny noise and large pads/regions
-    - min_fill prefers compact blobs (cube tops) over thin/irregular regions
-    """
-    mask = None
-    for low, high in colour_ranges:
-        m = cv2.inRange(img_hsv, low, high)
-        mask = m if mask is None else cv2.bitwise_or(mask, m)
-
-    kernel = np.ones((3, 3), np.uint8)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if not contours:
-        return None
-
-    candidates = []
-    for c in contours:
-        area = cv2.contourArea(c)
-        if area < min_area or area > max_area:
-            continue
-
-        x, y, w, h = cv2.boundingRect(c)
-        rect_area = float(w * h)
-        if rect_area <= 0:
-            continue
-
-        fill = area / rect_area                 # compactness
-        aspect = w / float(h)                   # near-square preferred
-
-        if fill < min_fill:
-            continue
-        if aspect < 0.6 or aspect > 1.6:
-            continue
-
-        M = cv2.moments(c)
-        if M["m00"] == 0:
-            continue
-        cx = int(M["m10"] / M["m00"])
-        cy = int(M["m01"] / M["m00"])
-
-        # score: prioritize compact, square-ish, moderate area
-        score = fill - abs(aspect - 1.0) * 0.2 - (area / max_area) * 0.05
-        candidates.append((score, cx, cy, area))
-
-    if not candidates:
-        return None
-
-    candidates.sort(key=lambda t: t[0], reverse=True)
-    _, cx, cy, area = candidates[0]
-    return cx, cy, area
+DEFAULT_MODEL = Path("models") / "yolo_cube.pt"
 
 
-detections = {}
-display = img_bgr.copy()
+def run_yolo(model_path: Path, image_path: Path, conf: float):
+    if not model_path.exists():
+        raise FileNotFoundError(
+            f"YOLO model not found at {model_path}. Train it with 07_train_yolo.py "
+            "or copy runs/yolo_cube_sorting/.../weights/best.pt to models/yolo_cube.pt."
+        )
+    model = YOLO(str(model_path))
+    results = model.predict(source=str(image_path), conf=conf, verbose=False)
+    return results[0]
 
-for name, ranges in COLOUR_RANGES.items():
-    result = find_cube(img_hsv, ranges)
-    if result is None:
-        continue
-    cx, cy, area = result
-    detections[name] = (cx, cy)
 
-    bgr_marker = {"red": (0, 0, 255), "green": (0, 255, 0), "blue": (255, 0, 0)}[name]
-    cv2.circle(display, (cx, cy), 12, bgr_marker, 2)
-    cv2.putText(display, name, (cx + 15, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.6, bgr_marker, 2)
+def detections_from_result(result):
+    detections = []
+    if result.boxes is None:
+        return detections
 
-cv2.imwrite("detection_result.png", display)
+    for index, box in enumerate(result.boxes):
+        xyxy = box.xyxy[0].detach().cpu().numpy()
+        confidence = float(box.conf[0].detach().cpu().item())
+        class_id = int(box.cls[0].detach().cpu().item())
+        x1, y1, x2, y2 = [float(v) for v in xyxy]
+        detections.append(
+            {
+                "id": index,
+                "class_id": class_id,
+                "confidence": confidence,
+                "xyxy": [x1, y1, x2, y2],
+                "center": [(x1 + x2) / 2.0, (y1 + y2) / 2.0],
+            }
+        )
+    return detections
 
-cam = np.load("camera_params.npz")
-cam_eye = cam["cam_eye"]
-cam_target = cam["cam_target"]
-cam_up = cam["cam_up"] if "cam_up" in cam.files else np.array([1.0, 0.0, 0.0])
-fov = float(cam["fov"])
-W = int(cam["width"])
-H = int(cam["height"])
 
-height_above_table = float(cam_eye[2] - cam_target[2])
-fov_rad = np.deg2rad(fov)
-view_height_m = 2 * height_above_table * np.tan(fov_rad / 2)
-view_width_m = view_height_m * (W / H)
-m_per_pixel_x = view_width_m / W
-m_per_pixel_y = view_height_m / H
+def draw_detections(image_bgr, detections, output_path: Path):
+    display = image_bgr.copy()
+    for det in detections:
+        x1, y1, x2, y2 = [int(round(v)) for v in det["xyxy"]]
+        cx, cy = [int(round(v)) for v in det["center"]]
+        cv2.rectangle(display, (x1, y1), (x2, y2), (0, 220, 255), 2)
+        cv2.circle(display, (cx, cy), 4, (0, 0, 255), -1)
+        cv2.putText(
+            display,
+            f"cube {det['confidence']:.2f}",
+            (x1, max(y1 - 8, 18)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.55,
+            (0, 220, 255),
+            2,
+        )
+    cv2.imwrite(str(output_path), display)
 
-print("\nWorld coordinates (estimated from pixel positions):")
-for name, (cx, cy) in detections.items():
-    dx_px = cx - W / 2
-    dy_px = cy - H / 2
 
-    if not np.allclose(cam_up, [1, 0, 0]):
-        raise ValueError("Unsupported camera orientation: update projection mapping.")
+def parse_args():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--image", type=Path, default=Path("scene_view.png"))
+    parser.add_argument("--camera", type=Path, default=Path("camera_params.npz"))
+    parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
+    parser.add_argument("--output", type=Path, default=Path("detection_result.png"))
+    parser.add_argument("--conf", type=float, default=0.35)
+    return parser.parse_args()
 
-    world_x = float(cam_target[0]) - dy_px * m_per_pixel_y
-    world_y = float(cam_target[1]) - dx_px * m_per_pixel_x
-    world_z = float(cam_target[2]) + 0.02
-    print(f"  {name:5s}: world ({world_x:.3f}, {world_y:.3f}, {world_z:.3f})")
+
+def main():
+    args = parse_args()
+    image_bgr = cv2.imread(str(args.image))
+    if image_bgr is None:
+        raise FileNotFoundError(f"{args.image} not found. Run 03_camera_capture.py first.")
+
+    result = run_yolo(args.model, args.image, args.conf)
+    detections = detections_from_result(result)
+    cam_cfg = load_camera_params(args.camera)
+
+    print("\nYOLO cube detections:")
+    if not detections:
+        print("  no cubes detected")
+    for det in detections:
+        cx, cy = det["center"]
+        world = pixel_to_world(cx, cy, cam_cfg, z=CUBE_Z)
+        det["world"] = world
+        print(
+            f"  cube_{det['id']:02d}: conf={det['confidence']:.2f}, "
+            f"pixel=({cx:.1f}, {cy:.1f}), world=({world[0]:.3f}, {world[1]:.3f}, {world[2]:.3f})"
+        )
+
+    draw_detections(image_bgr, detections, args.output)
+    print(f"\nSaved annotated detections to {args.output}")
+
+
+if __name__ == "__main__":
+    main()
