@@ -37,6 +37,13 @@ ARM_JOINTS = [0, 1, 2, 3, 4, 5, 6]
 DEFAULT_YOLO_MODEL = Path("models") / "yolo_cube.pt"
 DEFAULT_RL_POLICY = Path("models") / "sorting_policy.zip"
 TARGET_ZONE_Y_MIN = 0.25
+NEUTRAL_ARM_POSE = [0.0, -0.45, 0.0, -2.25, 0.0, 2.05, 0.8]
+SAFE_TRAVEL_Z = 0.94
+PRE_GRASP_Z = 0.82
+GRASP_Z = 0.655
+LIFT_Z = 0.90
+PRE_PLACE_Z = 0.84
+PLACE_Z = 0.675
 
 
 def step(seconds: float, gui: bool):
@@ -44,6 +51,10 @@ def step(seconds: float, gui: bool):
         p.stepSimulation()
         if gui:
             time.sleep(1.0 / SIM_HZ)
+
+
+def smoothstep(t: float) -> float:
+    return t * t * (3.0 - 2.0 * t)
 
 
 def set_gripper(robot_id: int, opening: float = 0.08, force: float = 150):
@@ -58,31 +69,82 @@ def set_gripper(robot_id: int, opening: float = 0.08, force: float = 150):
         )
 
 
+def set_gripper_smooth(robot_id: int, opening: float, gui: bool, duration: float = 0.5, force: float = 150):
+    start = np.array([p.getJointState(robot_id, joint)[0] for joint in FINGER_JOINTS], dtype=float)
+    target = np.array([opening / 2.0, opening / 2.0], dtype=float)
+    steps = max(1, int(duration * SIM_HZ))
+    for i in range(steps):
+        alpha = smoothstep((i + 1) / steps)
+        values = start + (target - start) * alpha
+        for joint, value in zip(FINGER_JOINTS, values):
+            p.setJointMotorControl2(
+                bodyUniqueId=robot_id,
+                jointIndex=joint,
+                controlMode=p.POSITION_CONTROL,
+                targetPosition=float(value),
+                force=force,
+            )
+        p.stepSimulation()
+        if gui:
+            time.sleep(1.0 / SIM_HZ)
+
+
+def move_arm_joints(robot_id: int, target_pose, duration: float, gui: bool, force: float = 180):
+    start = np.array([p.getJointState(robot_id, joint)[0] for joint in ARM_JOINTS], dtype=float)
+    target = np.array(target_pose, dtype=float)
+    steps = max(1, int(duration * SIM_HZ))
+    for i in range(steps):
+        alpha = smoothstep((i + 1) / steps)
+        pose = start + (target - start) * alpha
+        for joint, q in zip(ARM_JOINTS, pose):
+            p.setJointMotorControl2(
+                bodyUniqueId=robot_id,
+                jointIndex=joint,
+                controlMode=p.POSITION_CONTROL,
+                targetPosition=float(q),
+                force=force,
+                positionGain=0.05,
+                velocityGain=0.8,
+            )
+        p.stepSimulation()
+        if gui:
+            time.sleep(1.0 / SIM_HZ)
+
+
 def park_arm(robot_id: int, gui: bool):
-    for joint, q in enumerate([0, -0.4, 0, -2.2, 0, 2.0, 0.8]):
-        p.resetJointState(robot_id, joint, q)
-    set_gripper(robot_id, opening=0.08)
-    step(0.5, gui)
+    move_arm_joints(robot_id, NEUTRAL_ARM_POSE, duration=0.9, gui=gui)
+    set_gripper_smooth(robot_id, opening=0.08, gui=gui, duration=0.25, force=120)
+    step(0.2, gui)
 
 
 def move_ee_to(robot_id: int, pos, orn, duration: float, gui: bool):
-    joint_targets = p.calculateInverseKinematics(
-        bodyUniqueId=robot_id,
-        endEffectorLinkIndex=EE_LINK_INDEX,
-        targetPosition=pos,
-        targetOrientation=orn,
-        maxNumIterations=200,
-        residualThreshold=1e-4,
-    )
-    for i, joint in enumerate(ARM_JOINTS):
-        p.setJointMotorControl2(
+    start_pos = np.array(p.getLinkState(robot_id, EE_LINK_INDEX)[4], dtype=float)
+    end_pos = np.array(pos, dtype=float)
+    steps = max(1, int(duration * SIM_HZ))
+    for i in range(steps):
+        alpha = smoothstep((i + 1) / steps)
+        interp = start_pos + (end_pos - start_pos) * alpha
+        joint_targets = p.calculateInverseKinematics(
             bodyUniqueId=robot_id,
-            jointIndex=joint,
-            controlMode=p.POSITION_CONTROL,
-            targetPosition=joint_targets[i],
-            force=220,
+            endEffectorLinkIndex=EE_LINK_INDEX,
+            targetPosition=interp.tolist(),
+            targetOrientation=orn,
+            maxNumIterations=80,
+            residualThreshold=1e-4,
         )
-    step(duration, gui)
+        for joint_index, joint in enumerate(ARM_JOINTS):
+            p.setJointMotorControl2(
+                bodyUniqueId=robot_id,
+                jointIndex=joint,
+                controlMode=p.POSITION_CONTROL,
+                targetPosition=joint_targets[joint_index],
+                force=220,
+                positionGain=0.045,
+                velocityGain=0.75,
+            )
+        p.stepSimulation()
+        if gui:
+            time.sleep(1.0 / SIM_HZ)
 
 
 def capture_scene(width: int, height: int, gui: bool):
@@ -130,7 +192,11 @@ def detect_cubes(model_path: Path, image_path: Path, cam_cfg, conf: float):
 def source_area_detections(detections):
     """Ignore cubes already in the target/sorting zone."""
 
-    return [det for det in detections if det["world"][1] < TARGET_ZONE_Y_MIN]
+    return [
+        det
+        for det in detections
+        if det["world"][1] < TARGET_ZONE_Y_MIN
+    ]
 
 
 def draw_detections(image_path: Path, detections, output_path=Path("detection_result.png")):
@@ -157,9 +223,9 @@ def draw_detections(image_path: Path, detections, output_path=Path("detection_re
 def place_targets(count: int):
     if count <= 0:
         return []
-    spacing = 0.055
+    spacing = 0.075
     offsets = (np.arange(count) - (count - 1) / 2.0) * spacing
-    return [[float(TARGET_ZONE[0] + dx), float(TARGET_ZONE[1]), 0.70] for dx in offsets]
+    return [[float(TARGET_ZONE[0] + dx), float(TARGET_ZONE[1]), PLACE_Z] for dx in offsets]
 
 
 def build_rl_observation(detections, chosen_ids):
@@ -210,26 +276,34 @@ def order_detections_with_rl(detections, policy_path: Path):
 def pick_and_place_one(robot_id: int, detection, place, gui: bool):
     target = detection["world"]
     down_orn = p.getQuaternionFromEuler([np.pi, 0, 0])
-    pre_grasp = [target[0], target[1], 0.79]
-    grasp = [target[0], target[1], 0.65]
-    lift = [target[0], target[1], 0.84]
-    pre_place = [place[0], place[1], 0.84]
-    place_down = [place[0], place[1], 0.70]
+    safe_current = list(p.getLinkState(robot_id, EE_LINK_INDEX)[4])
+    safe_current[2] = SAFE_TRAVEL_Z
+    safe_grasp = [target[0], target[1], SAFE_TRAVEL_Z]
+    pre_grasp = [target[0], target[1], PRE_GRASP_Z]
+    grasp = [target[0], target[1], GRASP_Z]
+    lift = [target[0], target[1], LIFT_Z]
+    safe_place = [place[0], place[1], SAFE_TRAVEL_Z]
+    pre_place = [place[0], place[1], PRE_PLACE_Z]
+    place_down = [place[0], place[1], PLACE_Z]
 
     print(
         f"Picking cube_{detection['id']:02d} conf={detection['confidence']:.2f} "
         f"from ({target[0]:.3f}, {target[1]:.3f}) -> ({place[0]:.3f}, {place[1]:.3f})"
     )
-    move_ee_to(robot_id, pre_grasp, down_orn, 1.0, gui)
-    move_ee_to(robot_id, grasp, down_orn, 1.0, gui)
-    set_gripper(robot_id, opening=0.00, force=150)
-    step(0.8, gui)
-    move_ee_to(robot_id, lift, down_orn, 1.0, gui)
-    move_ee_to(robot_id, pre_place, down_orn, 1.2, gui)
-    move_ee_to(robot_id, place_down, down_orn, 1.0, gui)
-    set_gripper(robot_id, opening=0.08, force=120)
-    step(0.8, gui)
+    move_ee_to(robot_id, safe_current, down_orn, 0.7, gui)
+    move_ee_to(robot_id, safe_grasp, down_orn, 1.0, gui)
+    move_ee_to(robot_id, pre_grasp, down_orn, 0.8, gui)
+    move_ee_to(robot_id, grasp, down_orn, 0.9, gui)
+    set_gripper_smooth(robot_id, opening=0.00, gui=gui, duration=0.55, force=160)
+    step(0.25, gui)
+    move_ee_to(robot_id, lift, down_orn, 0.9, gui)
+    move_ee_to(robot_id, safe_place, down_orn, 1.2, gui)
     move_ee_to(robot_id, pre_place, down_orn, 0.8, gui)
+    move_ee_to(robot_id, place_down, down_orn, 0.75, gui)
+    set_gripper_smooth(robot_id, opening=0.08, gui=gui, duration=0.45, force=120)
+    step(0.45, gui)
+    move_ee_to(robot_id, pre_place, down_orn, 0.7, gui)
+    move_ee_to(robot_id, safe_place, down_orn, 0.8, gui)
 
 
 def parse_args():
