@@ -54,6 +54,12 @@ zone.
    python 05_pick_and_place.py
    ```
 
+5. Evaluate robustness across random cluttered scenes:
+
+   ```bash
+   python 09_evaluate_system.py --scenes 50 --save-images
+   ```
+
 ## What To Show In The Report
 
 - YOLO examples: generated cluttered images, labels, detections, precision/recall
@@ -61,5 +67,8 @@ zone.
 - RL learning: TensorBoard reward curve improving across curriculum stages.
 - Robotics demo: before/after screenshots showing cubes moved to the target zone
   while distractor objects remain on the table.
+- Quantitative evaluation: `evaluation/latest/summary.json` and
+  `evaluation/latest/metrics.csv` reporting cube recall, false positives,
+  scene pass rate, and localisation error across random cluttered scenes.
 - Ablation: compare easy/no-clutter training to randomised clutter training and
   show why randomisation prevents overfitting.
