@@ -189,6 +189,20 @@ def detect_cubes(model_path: Path, image_path: Path, cam_cfg, conf: float):
     return detections
 
 
+def detect_cubes_with_retries(model_path: Path, image_path: Path, cam_cfg, conf: float):
+    """Try progressively lower confidence thresholds before declaring a miss."""
+
+    thresholds = [conf, min(conf, 0.15), min(conf, 0.10)]
+    best = []
+    for threshold in dict.fromkeys(thresholds):
+        detections = detect_cubes(model_path, image_path, cam_cfg, threshold)
+        if len(detections) > len(best):
+            best = detections
+        if len(detections) >= 3:
+            return detections
+    return best
+
+
 def source_area_detections(detections):
     """Ignore cubes already in the target/sorting zone."""
 
@@ -342,7 +356,7 @@ def main():
         cam_cfg = capture_scene(args.width, args.height, gui)
         cam_cfg = load_camera_params("camera_params.npz")
 
-        detections = detect_cubes(args.model, Path("scene_view.png"), cam_cfg, args.conf)
+        detections = detect_cubes_with_retries(args.model, Path("scene_view.png"), cam_cfg, args.conf)
         remaining = source_area_detections(detections)
         draw_detections(Path("scene_view.png"), remaining)
         print(
