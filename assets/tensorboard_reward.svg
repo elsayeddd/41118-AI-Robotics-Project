@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">PPO reward curve placeholder</title>
+  <desc id="desc">A TensorBoard-style line chart showing reward improving through curriculum stages.</desc>
+  <rect width="960" height="540" fill="#ffffff"/>
+  <rect x="72" y="54" width="820" height="390" fill="#f5f8fb" stroke="#dce2eb"/>
+  <g stroke="#dce2eb" stroke-width="1">
+    <path d="M72 132h820M72 210h820M72 288h820M72 366h820"/>
+    <path d="M236 54v390M400 54v390M564 54v390M728 54v390"/>
+  </g>
+  <g font-family="Inter, Arial, sans-serif" fill="#657084" font-size="18">
+    <text x="72" y="486">timesteps</text>
+    <text x="30" y="70">reward</text>
+    <text x="214" y="470">stage 1</text>
+    <text x="378" y="470">stage 2</text>
+    <text x="542" y="470">stage 3</text>
+    <text x="706" y="470">stage 4</text>
+  </g>
+  <path d="M84 394 C145 378, 171 342, 219 320 S318 301, 364 266 S461 214, 514 236 S596 302, 648 254 S735 169, 874 126" fill="none" stroke="#176b87" stroke-width="7" stroke-linecap="round"/>
+  <path d="M84 414 C150 397, 197 356, 254 334 S358 291, 418 258 S514 245, 565 274 S665 247, 726 206 S808 155, 874 145" fill="none" stroke="#a7472b" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+  <g font-family="Inter, Arial, sans-serif">
+    <text x="72" y="34" fill="#18202f" font-size="26" font-weight="700">PPO Curriculum Reward</text>
+    <text x="628" y="94" fill="#176b87" font-size="20" font-weight="700">ep_rew_mean improving</text>
+    <text x="72" y="518" fill="#657084" font-size="16">Replace with TensorBoard scalar export before final submission.</text>
+  </g>
+</svg>
