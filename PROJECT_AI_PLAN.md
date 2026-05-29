@@ -60,6 +60,13 @@ zone.
    python 05_pick_and_place.py --scenes 3 --distractors 7 --scene-delay 1.0
    ```
 
+   If your local copy does not have the native `--scenes` option yet, use the
+   batch runner:
+
+   ```bash
+   python 10_multi_scene_sorting_demo.py --scenes 3 --distractors 7
+   ```
+
 5. Evaluate robustness across random cluttered scenes:
 
    ```bash
