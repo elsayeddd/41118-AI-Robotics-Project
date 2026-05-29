@@ -18,7 +18,7 @@ def parse_args():
     parser.add_argument("--scenes", type=int, default=3)
     parser.add_argument("--seed", type=int, default=2)
     parser.add_argument("--distractors", type=int, default=7)
-    parser.add_argument("--conf", type=float, default=0.20)
+    parser.add_argument("--conf", type=float, default=0.12)
     parser.add_argument("--width", type=int, default=640)
     parser.add_argument("--height", type=int, default=480)
     parser.add_argument("--model", type=Path, default=Path("models") / "yolo_cube.pt")
