@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import time
 from pathlib import Path
 
 import cv2
@@ -37,9 +38,21 @@ DEFAULT_MODEL = Path("models") / "yolo_cube.pt"
 DEFAULT_OUTPUT = Path("evaluation") / "latest"
 
 
-def settle(steps: int = 120):
+def settle(steps: int = 120, gui: bool = False):
     for _ in range(steps):
         p.stepSimulation()
+        if gui:
+            time.sleep(1.0 / 240.0)
+
+
+def configure_gui_view():
+    p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+    p.resetDebugVisualizerCamera(
+        cameraDistance=1.25,
+        cameraYaw=42.0,
+        cameraPitch=-42.0,
+        cameraTargetPosition=[0.5, 0.0, 0.62],
+    )
 
 
 def park_arm(robot_id: int):
@@ -127,7 +140,9 @@ def evaluate_scene(index: int, args, model: YOLO):
         return_distractors=True,
     )
     park_arm(panda_id)
-    settle()
+    if args.gui:
+        configure_gui_view()
+    settle(gui=args.gui)
 
     cam_cfg = camera_params(width=args.width, height=args.height, fov=60.0)
     rgb, _, _ = capture_camera(cam_cfg, renderer=p.ER_TINY_RENDERER)
@@ -148,6 +163,9 @@ def evaluate_scene(index: int, args, model: YOLO):
 
     if args.save_images:
         draw_scene(image_path, detections, matches, args.output / "annotated" / f"scene_{index:04d}.jpg")
+
+    if args.gui and args.scene_delay > 0:
+        time.sleep(args.scene_delay)
 
     return {
         "scene": index,
@@ -212,6 +230,13 @@ def parse_args():
     parser.add_argument("--height", type=int, default=480)
     parser.add_argument("--seed", type=int, default=1000)
     parser.add_argument("--save-images", action="store_true")
+    parser.add_argument("--gui", action="store_true", help="Show each evaluation scene in the PyBullet GUI.")
+    parser.add_argument(
+        "--scene-delay",
+        type=float,
+        default=0.75,
+        help="Seconds to pause after each GUI scene so the detections can be inspected.",
+    )
     return parser.parse_args()
 
 
@@ -220,7 +245,7 @@ def main():
     if not args.model.exists():
         raise FileNotFoundError(f"YOLO model not found at {args.model}.")
 
-    setup_world(gui=False)
+    setup_world(gui=args.gui)
     model = YOLO(str(args.model))
     rows = []
     try:
