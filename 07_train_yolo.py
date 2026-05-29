@@ -19,12 +19,14 @@ def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=Path("datasets") / "cube_sorting" / "data.yaml")
     parser.add_argument("--model", type=str, default="yolov8n.pt")
-    parser.add_argument("--epochs", type=int, default=80)
+    parser.add_argument("--epochs", type=int, default=40)
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--batch", type=int, default=16)
     parser.add_argument("--device", type=str, default=None)
+    parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--project", type=str, default="runs/yolo_cube_sorting")
     parser.add_argument("--name", type=str, default="pretrained_yolo_cube")
+    parser.add_argument("--exist-ok", action="store_true", help="Allow reusing an existing run directory.")
     parser.add_argument("--copy-best-to", type=Path, default=Path("models") / "yolo_cube.pt")
     return parser.parse_args()
 
@@ -45,6 +47,8 @@ def main():
         "pretrained": True,
         "plots": True,
         "val": True,
+        "patience": args.patience,
+        "exist_ok": args.exist_ok,
     }
     if args.device is not None:
         train_kwargs["device"] = args.device
