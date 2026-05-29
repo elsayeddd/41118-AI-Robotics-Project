@@ -41,6 +41,15 @@ zone.
    python 07_train_yolo.py
    ```
 
+   To continue improving the trained detector from the current best weights:
+
+   ```bash
+   python 07_train_yolo.py --model models/yolo_cube.pt --epochs 40 --name yolo_cube_finetune_v2
+   ```
+
+   The selected runtime confidence threshold is `0.12`, based on the validation
+   sweep improving recall while keeping false positives low.
+
 3. Train the RL sorting policy:
 
    ```bash
