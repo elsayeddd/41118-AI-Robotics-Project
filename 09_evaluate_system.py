@@ -223,7 +223,7 @@ def parse_args():
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--scenes", type=int, default=50)
     parser.add_argument("--distractors", type=int, default=7)
-    parser.add_argument("--conf", type=float, default=0.20)
+    parser.add_argument("--conf", type=float, default=0.12)
     parser.add_argument("--match-distance", type=float, default=0.075)
     parser.add_argument("--max-false-positives", type=int, default=0)
     parser.add_argument("--width", type=int, default=640)
