@@ -60,6 +60,12 @@ zone.
    python 09_evaluate_system.py --scenes 50 --save-images
    ```
 
+   For visual inspection in PyBullet GUI, run a shorter pass:
+
+   ```bash
+   python 09_evaluate_system.py --scenes 5 --gui --save-images --scene-delay 1.0
+   ```
+
 ## What To Show In The Report
 
 - YOLO examples: generated cluttered images, labels, detections, precision/recall
