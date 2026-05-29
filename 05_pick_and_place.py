@@ -324,7 +324,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", type=Path, default=DEFAULT_YOLO_MODEL)
     parser.add_argument("--rl-policy", type=Path, default=DEFAULT_RL_POLICY)
-    parser.add_argument("--conf", type=float, default=0.20)
+    parser.add_argument("--conf", type=float, default=0.12)
     parser.add_argument("--seed", type=int, default=2)
     parser.add_argument("--distractors", type=int, default=7)
     parser.add_argument("--width", type=int, default=640)
