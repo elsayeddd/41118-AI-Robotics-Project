@@ -54,6 +54,12 @@ zone.
    python 05_pick_and_place.py
    ```
 
+   To run a batch demo where the arm sorts several random layouts in sequence:
+
+   ```bash
+   python 05_pick_and_place.py --scenes 3 --distractors 7 --scene-delay 1.0
+   ```
+
 5. Evaluate robustness across random cluttered scenes:
 
    ```bash
