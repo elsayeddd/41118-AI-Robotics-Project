@@ -62,8 +62,8 @@
           <div class="metric"><strong>0.10</strong><span>false positives per scene</span></div>
         </div>
         <div class="evidence-grid">
-          <figure class="media-frame"><img src="assets/tensorboard_reward.svg" alt="TensorBoard reward curve for PPO curriculum training" /><figcaption>TensorBoard PPO reward curve. Export the reward plot from TensorBoard and save it as <code>assets/tensorboard_reward.svg</code> or update this image with the final export.</figcaption></figure>
-          <figure class="media-frame"><img src="assets/yolo_confusion_matrix.svg" alt="YOLO validation confusion matrix" /><figcaption>YOLO validation confusion matrix. Save the Ultralytics output as <code>assets/yolo_confusion_matrix.svg</code> or update this image with the final export.</figcaption></figure>
+          <figure class="media-frame"><img src="assets/tensorboard_reward.svg" alt="TensorBoard reward curve for PPO curriculum training" /><figcaption>TensorBoard reward evidence from PPO curriculum training. The reward trend shows the policy learning to complete sorting decisions across increasingly difficult scene stages.</figcaption></figure>
+          <figure class="media-frame"><img src="assets/yolo_confusion_matrix.png" alt="YOLO validation confusion matrix" /><figcaption>YOLO validation confusion matrix from the cube detector. The model is trained as a CNN-based object detector to recognise cube targets in clutter while rejecting non-cube distractors.</figcaption></figure>
         </div>
       </section>
       <section class="section band" id="implementation">
@@ -85,7 +85,7 @@ python 05_pick_and_place.py</code></pre>
       </section>
       <section class="section" id="video">
         <div class="section-heading"><p class="eyebrow">Final Demonstration</p><h2>Robot sorting run</h2></div>
-        <div class="video-shell"><video controls preload="metadata" poster="assets/video_poster.svg"><source src="assets/final_demo.mp4" type="video/mp4" />Your browser does not support the video tag.</video><p>Add the final edited project video at <code>assets/final_demo.mp4</code>. Nicholas Camilo and Volkan Yildirim recorded the demonstration footage used for the final video.</p></div>
+        <div class="video-shell"><video controls preload="metadata" poster="assets/video_poster.svg"><source src="assets/final_demo.mp4" type="video/mp4" />Your browser does not support the video tag.</video><p>Final demonstration of the trained perception, policy, and motion pipeline sorting cube targets from a cluttered tabletop scene. Nicholas Camilo and Volkan Yildirim recorded the demonstration footage used for the final video.</p></div>
       </section>
       <section class="section band" id="team">
         <div class="section-heading"><p class="eyebrow">Team</p><h2>Contributions</h2></div>
