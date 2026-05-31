@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">YOLO confusion matrix placeholder</title>
+  <desc id="desc">A simplified confusion matrix for one-class cube detection.</desc>
+  <rect width="960" height="540" fill="#ffffff"/>
+  <text x="70" y="44" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="700" fill="#18202f">YOLO Validation Confusion Matrix</text>
+  <g transform="translate(250 82)" font-family="Inter, Arial, sans-serif">
+    <rect x="0" y="0" width="150" height="150" fill="#176b87"/>
+    <rect x="150" y="0" width="150" height="150" fill="#dce2eb"/>
+    <rect x="0" y="150" width="150" height="150" fill="#eef3f8"/>
+    <rect x="150" y="150" width="150" height="150" fill="#a7472b"/>
+    <g fill="#ffffff" font-size="38" font-weight="800" text-anchor="middle">
+      <text x="75" y="88">0.98</text>
+      <text x="225" y="238">0.90</text>
+    </g>
+    <g fill="#18202f" font-size="30" font-weight="800" text-anchor="middle">
+      <text x="225" y="88">0.02</text>
+      <text x="75" y="238">0.10</text>
+    </g>
+    <g fill="#657084" font-size="18" text-anchor="middle">
+      <text x="75" y="-20">pred cube</text>
+      <text x="225" y="-20">pred bg</text>
+      <text x="-58" y="80">true cube</text>
+      <text x="-52" y="230">true bg</text>
+    </g>
+  </g>
+  <g font-family="Inter, Arial, sans-serif" fill="#657084" font-size="18">
+    <text x="70" y="438">One target class means the matrix mainly shows cube detections, missed cubes, and background false positives.</text>
+    <text x="70" y="472">Replace with Ultralytics confusion_matrix.png or confusion_matrix_normalized.png for final submission.</text>
+  </g>
+</svg>

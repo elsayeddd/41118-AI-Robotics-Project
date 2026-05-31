@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clutter-Aware Cube Sorting Robot</title>
+    <meta name="description" content="Portfolio page for a YOLO and PPO reinforcement learning robotics project that detects cubes in clutter with a PyBullet Panda arm." />
+    <link rel="stylesheet" href="portfolio.css" />
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <nav class="nav" aria-label="Primary navigation">
+        <a class="brand" href="#top">Cube Sorting AI Robot</a>
+        <div class="nav-links">
+          <a href="#system">System</a>
+          <a href="#results">Results</a>
+          <a href="#video">Video</a>
+          <a href="#team">Team</a>
+          <a href="https://github.com/elsayeddd/41118-AI-Robotics-Project">Code</a>
+        </div>
+      </nav>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">41118 AI Robotics Project</p>
+          <h1>Clutter-Aware Cube Sorting Robot</h1>
+          <p>A simulated Panda robot arm detects cube-shaped target objects in a cluttered tabletop scene, chooses an order for sorting, and moves every cube into a target zone while ignoring distractors.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="https://github.com/elsayeddd/41118-AI-Robotics-Project">View GitHub Repository</a>
+            <a class="button secondary" href="#video">Watch Final Demo</a>
+          </div>
+        </div>
+        <div class="scene-panel" aria-label="Project system diagram">
+          <div class="camera-beam"></div>
+          <div class="table-top"><span class="cube red"></span><span class="cube blue"></span><span class="cube green"></span><span class="distractor sphere"></span><span class="distractor bar"></span><span class="target-zone">Sort zone</span><span class="arm-base"></span><span class="arm-link one"></span><span class="arm-link two"></span></div>
+          <div class="pipeline-strip"><span>YOLO detection</span><span>PPO policy</span><span>IK motion</span></div>
+        </div>
+      </section>
+    </header>
+    <main>
+      <section class="section" id="overview">
+        <div class="section-heading"><p class="eyebrow">Project Overview</p><h2>From colour tracking to clutter-aware sorting</h2></div>
+        <div class="two-column">
+          <p>The project evolved from a simple colour-based pick-and-place demo into a deeper AI robotics system. The final task is object-centric: identify cubes in clutter, ignore non-cube distractors, handle camera occlusion from the robot arm, and complete a full sorting sequence in one run.</p>
+          <p>The perception model is a pretrained YOLO detector fine-tuned on synthetic PyBullet images. The high-level sorting policy uses PPO reinforcement learning with curriculum stages, while PyBullet inverse kinematics controls the low-level arm motion.</p>
+        </div>
+      </section>
+      <section class="section band" id="system">
+        <div class="section-heading"><p class="eyebrow">System Architecture</p><h2>Perception, policy, and motion control</h2></div>
+        <div class="architecture">
+          <article><h3>1. Synthetic scene generation</h3><p>Randomised training scenes are created with variable cube colours, distractor shapes, camera jitter, image noise, dense clutter, and robot-arm occlusion.</p></article>
+          <article><h3>2. YOLO cube detection</h3><p>A pretrained YOLO CNN detector is fine-tuned to detect the class <code>cube</code> regardless of colour, rather than relying on classical HSV segmentation.</p></article>
+          <article><h3>3. PPO sorting policy</h3><p>A PPO agent receives detected object features and learns which cube to sort next through a staged curriculum.</p></article>
+          <article><h3>4. Robot execution</h3><p>The Panda arm parks before perception, re-observes the scene, selects source-area cubes, and executes smooth pick-and-place trajectories into the sorting zone.</p></article>
+        </div>
+      </section>
+      <section class="section" id="results">
+        <div class="section-heading"><p class="eyebrow">Evaluation</p><h2>Model performance and learning evidence</h2></div>
+        <div class="metrics-grid">
+          <div class="metric"><strong>98.0%</strong><span>cube recall at confidence 0.12</span></div>
+          <div class="metric"><strong>86.0%</strong><span>full-scene pass rate over 50 scenes</span></div>
+          <div class="metric"><strong>0.003 m</strong><span>mean localisation error</span></div>
+          <div class="metric"><strong>0.10</strong><span>false positives per scene</span></div>
+        </div>
+        <div class="evidence-grid">
+          <figure class="media-frame"><img src="assets/tensorboard_reward.svg" alt="TensorBoard reward curve for PPO curriculum training" /><figcaption>TensorBoard PPO reward curve. Export the reward plot from TensorBoard and save it as <code>assets/tensorboard_reward.svg</code> or update this image with the final export.</figcaption></figure>
+          <figure class="media-frame"><img src="assets/yolo_confusion_matrix.svg" alt="YOLO validation confusion matrix" /><figcaption>YOLO validation confusion matrix. Save the Ultralytics output as <code>assets/yolo_confusion_matrix.svg</code> or update this image with the final export.</figcaption></figure>
+        </div>
+      </section>
+      <section class="section band" id="implementation">
+        <div class="section-heading"><p class="eyebrow">Implementation</p><h2>Key scripts and code path</h2></div>
+        <div class="code-layout">
+          <div class="script-list">
+            <a href="06_generate_yolo_dataset.py"><strong>06_generate_yolo_dataset.py</strong><span>Curriculum dataset generation</span></a>
+            <a href="07_train_yolo.py"><strong>07_train_yolo.py</strong><span>YOLO fine-tuning</span></a>
+            <a href="08_train_rl_sorting_policy.py"><strong>08_train_rl_sorting_policy.py</strong><span>PPO reward learning</span></a>
+            <a href="05_pick_and_place.py"><strong>05_pick_and_place.py</strong><span>Full arm sorting demo</span></a>
+            <a href="09_evaluate_system.py"><strong>09_evaluate_system.py</strong><span>Random-scene perception evaluation</span></a>
+          </div>
+          <pre><code>python 06_generate_yolo_dataset.py --samples 1200 --val-samples 240
+python 07_train_yolo.py --model models/yolo_cube.pt --epochs 40
+python 08_train_rl_sorting_policy.py
+python 09_evaluate_system.py --scenes 50 --save-images
+python 05_pick_and_place.py</code></pre>
+        </div>
+      </section>
+      <section class="section" id="video">
+        <div class="section-heading"><p class="eyebrow">Final Demonstration</p><h2>Robot sorting run</h2></div>
+        <div class="video-shell"><video controls preload="metadata" poster="assets/video_poster.svg"><source src="assets/final_demo.mp4" type="video/mp4" />Your browser does not support the video tag.</video><p>Add the final edited project video at <code>assets/final_demo.mp4</code>. Nicholas Camilo and Volkan Yildirim recorded the demonstration footage used for the final video.</p></div>
+      </section>
+      <section class="section band" id="team">
+        <div class="section-heading"><p class="eyebrow">Team</p><h2>Contributions</h2></div>
+        <div class="team-grid">
+          <article><h3>Adam El-Sayed</h3><p>Lead implementation contributor. Developed the YOLO perception pipeline, synthetic dataset generation, PPO curriculum training workflow, evaluation scripts, and robot sorting integration.</p></article>
+          <article><h3>Nicholas Camilo</h3><p>Demo and validation contributor. Supported final run recording, observed arm behaviour during tests, helped identify motion and placement issues, and contributed to project presentation assets.</p></article>
+          <article><h3>Volkan Yildirim</h3><p>Demo and testing contributor. Supported final video capture, assisted with scenario validation, helped document the cluttered sorting story, and contributed to final portfolio material.</p></article>
+        </div>
+      </section>
+    </main>
+    <footer class="footer"><p>41118 AI Robotics Project | YOLO object detection | PPO reinforcement learning | PyBullet simulation</p><a href="#top">Back to top</a></footer>
+  </body>
+</html>

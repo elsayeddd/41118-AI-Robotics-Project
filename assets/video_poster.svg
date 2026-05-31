@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Final robot demo video poster</title>
+  <desc id="desc">Poster image placeholder for the final cube sorting robot video.</desc>
+  <rect width="1280" height="720" fill="#18202f"/>
+  <rect x="110" y="130" width="1060" height="420" rx="14" fill="#dce5ed"/>
+  <path d="M180 470 L1080 470 L960 240 L290 230 Z" fill="#b8c8d4" stroke="#7e91a1" stroke-width="4"/>
+  <rect x="775" y="365" width="145" height="86" rx="8" fill="#ffe75a" stroke="#85782b" stroke-width="3" stroke-dasharray="11 8"/>
+  <rect x="420" y="330" width="54" height="54" rx="6" fill="#d94a38"/>
+  <rect x="560" y="290" width="54" height="54" rx="6" fill="#3767b1"/>
+  <rect x="610" y="405" width="54" height="54" rx="6" fill="#2f8f5b"/>
+  <circle cx="710" cy="335" r="34" fill="#d0bd35"/>
+  <rect x="260" y="420" width="125" height="36" rx="8" fill="#6b596c" transform="rotate(-14 322 438)"/>
+  <circle cx="250" cy="395" r="58" fill="#354055"/>
+  <rect x="303" y="366" width="260" height="34" rx="17" fill="#eef3f8" transform="rotate(-19 303 366)"/>
+  <rect x="512" y="288" width="210" height="30" rx="15" fill="#eef3f8" transform="rotate(20 512 288)"/>
+  <circle cx="640" cy="360" r="68" fill="#ffffff" opacity="0.92"/>
+  <path d="M620 322 L620 398 L690 360 Z" fill="#176b87"/>
+  <text x="110" y="90" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="800" fill="#ffffff">Final Demonstration Video</text>
+  <text x="110" y="630" font-family="Inter, Arial, sans-serif" font-size="28" fill="#dce5ed">Replace assets/final_demo.mp4 with the final edited run footage.</text>
+</svg>
